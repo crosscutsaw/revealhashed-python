@@ -1,0 +1,16 @@
+[project]
+name = "revealhashed"
+version = "0.1.0"
+description = "Dump or analyze existing NTDS data, crack NT hashes with hashcat and match them to their corresponding user accounts."
+authors = [{ name = "aslan emre aslan", email = "emre@zurrak.com" }]
+license = "MIT"
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = ["impacket"]
+
+[project.scripts]
+revealhashed = "revealhashed.__main__:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
