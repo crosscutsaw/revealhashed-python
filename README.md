@@ -2,6 +2,10 @@
 revealhashed is a semi-automated python script to automatically match username-hash-password respectively.
 
 ## how to install
+from pypi:  
+`pipx install revealhashed`
+
+from github:  
 `pipx install git+https://github.com/crosscutsaw/revealhashed-python`
 
 ## how to use
