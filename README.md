@@ -41,7 +41,7 @@ this command wants to get supplied with ntds file by user then does classic reve
 -w (wordlist) switch is needed. one or more wordlists can be supplied.  
 -e (enabled-only) switch is not needed but suggested. it's self explanatory; only shows enabled users.  
 
-for example: `revealhashed reveal -ntds ~/Downloads/TROUPEDC_192.168.2.11_2025-05-12_123035.ntds -w ~/Downloads/wordlist1.txt -e`
+for example: `revealhashed reveal -ntds TROUPEDC_192.168.2.11_2025-05-12_123035.ntds -w wordlist1.txt -e`
 
 ## example outputs
 ![](https://raw.githubusercontent.com/crosscutsaw/revealhashed-python/main/rp1.PNG)
