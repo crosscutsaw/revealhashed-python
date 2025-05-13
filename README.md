@@ -1,5 +1,5 @@
 ## about revealhashed-python v0.1
-revealhashed is a semi-automated python script to automatically match username-hash-password respectively.
+revealhashed is a streamlined utility to correlate ntds usernames, nt hashes, and cracked passwords in one view while cutting out time-consuming manual tasks.
 
 ## how to install
 from pypi:  
