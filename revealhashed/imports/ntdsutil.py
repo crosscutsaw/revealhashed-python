@@ -18,7 +18,7 @@ from impacket.dcerpc.v5.rpcrt import RPC_C_AUTHN_GSS_NEGOTIATE, \
     RPC_C_AUTHN_LEVEL_PKT_PRIVACY
 from impacket.examples.utils import parse_target
 
-# ANSI Colors
+# ansi Colors
 BOLD_GREEN = "\033[1;32m"
 BOLD_ORANGE = "\033[1;33m"
 BOLD_RED = "\033[1;31m"
@@ -28,6 +28,17 @@ RESET = "\033[0m"
 ## From impacket/atexec.py
 
 CODEC = sys.stdout.encoding
+
+# save original info function in case you need it
+original_info = logging.info
+
+# override logging.info to use print() with [+] in bold green
+def green_info(msg, *args, **kwargs):
+    if args:
+        msg = msg % args  # emulate logger-style formatting
+    print(f"{BOLD_GREEN}[+]{RESET} {msg}")
+
+logging.info = green_info
 
 def get_ntdsutil_parser():
     parser = argparse.ArgumentParser(add_help=False)

@@ -121,6 +121,8 @@ def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enable
     print(f"\n{BOLD_GREEN}[+]{RESET} Revealed credentials:")
     output_lines = []
 
+    grouped = defaultdict(list)
+
     with open(individual_ntds_path, "r") as f:
         for line in f:
             parts = line.strip().split(":")
@@ -131,39 +133,38 @@ def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enable
             nt_hash = parts[3].lower()
 
             # determine account status
-            # if the line contains (status=disabled), mark as disabled.
-            # if no such marker exists (as in --just-dc-ntlm output), treat all accounts as "enabled".
             status_match = re.search(r"\(status=(\w+)\)", line)
             status = status_match.group(1).lower() if status_match else "enabled"
 
             if nt_hash not in cracked_hashes and nt_hash != "31d6cfe0d16ae931b73c59d7e0c089c0":
                 continue
-
             if enabled_only and status != "enabled":
                 continue
 
             if nt_hash == "31d6cfe0d16ae931b73c59d7e0c089c0":
-                password = f"{BOLD_ORANGE}<no password>{RESET}"
+                password_key = "<no password>"
+                password_colored = f"{BOLD_ORANGE}<no password>{RESET}"
             else:
-                password = f"{BOLD_WHITE}{cracked_hashes.get(nt_hash, '')}{RESET}"
+                plain = cracked_hashes[nt_hash]
+                password_key = plain
+                password_colored = f"{BOLD_WHITE}{plain}{RESET}"
 
             disabled_str = f" {BOLD_RED}<disabled>{RESET}" if status == "disabled" else ""
-            line_out = f"{user:<40} {password}{disabled_str}"
-            print(line_out)
+            line_out = f"{user:<40} {password_colored}{disabled_str}"
+            output_lines.append((password_key, user, line_out, status))
 
-            plain_password = (
-                cracked_hashes.get(nt_hash, "<no password>")
-                if nt_hash != "31d6cfe0d16ae931b73c59d7e0c089c0"
-                else "<no password>"
-            )
-            output_lines.append(f"{user:<40} {plain_password}{' <disabled>' if status == 'disabled' else ''}")
+    # sort: <no password> first, then by password
+    output_lines.sort(key=lambda x: (x[0] != "<no password>", x[0].lower(), x[1].lower()))
 
+    # print and write
     output_file = session_dir / "revealhashed.txt"
     with open(output_file, "w") as outf:
-        for l in output_lines:
-            outf.write(l + "\n")
-    print(f"\n{BOLD_GREEN}[+]{RESET} Output saved to {output_file}")
+        for password_key, user, line_out, status in output_lines:
+            print(line_out)
+            plain = password_key
+            outf.write(f"{user:<40} {plain}{' <disabled>' if status == 'disabled' else ''}\n")
 
+    print(f"\n{BOLD_GREEN}[+]{RESET} Output saved to {output_file}")
 
 def main():
     print(f"\n{BOLD_BLUE}revealhashed v0.1{RESET}\n")
