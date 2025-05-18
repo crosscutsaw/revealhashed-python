@@ -44,7 +44,7 @@ for example:
 this command wants to get supplied with ntds file by user then does classic revealhashed operations.  
 _ntds file should contain usernames and hashes. it should be not ntds.dit. example ntds dump can be obtained from repo_
 
--ntds or -nxc switch is needed. -ntds switch is for a file you own with hashes. -nxc switch is for scanning ~/.nxc/logs/ntds then selecting .ntds file.
+-ntds or -nxc switch is needed. -ntds switch is for a file you own with hashes. -nxc switch is for scanning ~/.nxc/logs/ntds then selecting .ntds file.  
 -w (wordlist) switch is needed. one or more wordlists can be supplied.  
 -e (enabled-only) switch is not needed but suggested. it's self explanatory; only shows enabled users.  
 
