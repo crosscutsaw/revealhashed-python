@@ -51,8 +51,9 @@ def parse_args():
     
     # subparser: reveal
     reveal_parser = subparsers.add_parser("reveal", help="Use your own NTDS dump then reveal credentials with it")
-    reveal_parser.add_argument("-ntds", help="Path to .ntds file", required=True)
-    reveal_parser.add_argument("-w", "--wordlists", nargs="+", metavar="WORDLIST WORDLIST2", help="Wordlists to use with hashcat", required=True)
+    reveal_parser.add_argument("-ntds", help="Path to .ntds file")
+    reveal_parser.add_argument("-nxc", action="store_true", help="Scan $HOME/.nxc/logs/ntds for .ntds files")
+    reveal_parser.add_argument("-w", "--wordlists", nargs="+", metavar="WORDLIST WORDLIST2", help="Wordlists to use with hashcat", required=False)
     reveal_parser.add_argument("-e", "--enabled-only", action="store_true", help="Only show enabled accounts")
 
     return parser
@@ -100,10 +101,10 @@ def extract_unique_hashes(ntds_path, output_path, full_output_path, write_full_o
         raise
 
 def run_hashcat(hashes_file, wordlists):
-    start = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    start = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
     print(f"{BOLD_GREEN}[+]{RESET} Starting hashcat session at {start}")
     subprocess.run(["hashcat", "-m1000", str(hashes_file), *wordlists, "--quiet"])
-    end = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    end = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
     print(f"{BOLD_GREEN}[+]{RESET} Ended hashcat session at {end}")
 
 def parse_potfile(potfile_path):
@@ -168,7 +169,7 @@ def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enable
     print(f"\n{BOLD_GREEN}[+]{RESET} Output saved to {output_file}")
 
 def main():
-    print(f"\n{BOLD_BLUE}revealhashed v0.1{RESET}\n")
+    print(f"\n{BOLD_BLUE}revealhashed v0.1.2{RESET}\n")
 
     parser = parse_args()
     args = parser.parse_args()
@@ -188,16 +189,17 @@ def main():
         ntdsutil_dir = session_dir / "ntdsutil"
         ntdsutil_dir.mkdir(parents=True, exist_ok=True)
         args.outputdir = str(ntdsutil_dir)
-
-        print(f"{BOLD_GREEN}[+]{RESET} Starting NTDS dump with ntdsutil")
+        
+        start = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+        print(f"{BOLD_GREEN}[+]{RESET} Starting NTDS dump with ntdsutil at {start}")
 
         try:
             ntdsutil.run_ntdsutil(args)
         except Exception as e:
             print(f"{BOLD_RED}[!]{RESET} NTDS dump failed: {e}")
             return
-
-        print(f"{BOLD_GREEN}[+]{RESET} NTDS successfully dumped!")
+        end = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+        print(f"{BOLD_GREEN}[+]{RESET} NTDS successfully dumped at {end}")
 
         # run secretsdump in the same session folder
         system_path = ntdsutil_dir / "SYSTEM"
@@ -247,11 +249,37 @@ def main():
         reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only)
 
     elif args.command == "reveal":
-        if not args.ntds:
-            print(f"{BOLD_RED}[!]{RESET} Please provide an NTDS file with -ntds")
-            return
+        if args.nxc:
+            nxc_dir = Path.home() / ".nxc" / "logs" / "ntds"
+            ntds_files = sorted(nxc_dir.glob("*.ntds"))
+
+            if not ntds_files:
+                print(f"{BOLD_RED}[!]{RESET} No .ntds files found in {nxc_dir}")
+                sys.exit(1)
+
+            print(f"{BOLD_GREEN}[+]{RESET} Found {len(ntds_files)} .ntds files in {nxc_dir}")
+            for idx, f in enumerate(ntds_files):
+                print(f"[{idx}] {f.name}")
+
+            while True:
+                try:
+                    selection = int(input("\nSelect file by index: "))
+                    print()
+                    if 0 <= selection < len(ntds_files):
+                        ntds_path = ntds_files[selection]
+                        args.ntds = str(ntds_path)
+                        break
+                    else:
+                        print(f"\n{BOLD_RED}[!]{RESET} Invalid selection. Try again.")
+                except ValueError:
+                    print(f"\n{BOLD_RED}[!]{RESET} Please enter a valid number.")
+        else:
+            if not args.ntds:
+                print(f"{BOLD_RED}[!]{RESET} Please specify either -ntds or -nxc")
+                sys.exit(1)
+            ntds_path = Path(args.ntds)
         if not args.wordlists:
-            print(f"{BOLD_RED}[!]{RESET} No wordlists provided. Use -w to specify at least one wordlist.")
+            print(f"\n{BOLD_RED}[!]{RESET} No wordlists provided. Use -w to specify at least one wordlist.")
             return
 
         TMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -273,3 +301,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# revealhashed v0.1.2
+# 
+# contact options
+# mail: https://blog.zurrak.com/contact.html
+# twitter: https://twitter.com/tasiyanci
+# linkedin: https://linkedin.com/in/aslanemreaslan
