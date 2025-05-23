@@ -3,7 +3,7 @@ name = "revealhashed"
 version = "0.1.2"
 description = "Dump or analyze existing NTDS data, crack NT hashes with hashcat and match them to their corresponding user accounts."
 authors = [{ name = "aslan emre aslan", email = "emre@zurrak.com" }]
-license = "MIT"
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = ["impacket"]
