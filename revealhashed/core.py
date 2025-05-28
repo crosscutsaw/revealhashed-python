@@ -6,6 +6,7 @@ import re
 import subprocess
 import shutil
 import sys
+import csv
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -47,6 +48,8 @@ def parse_args():
     dump_parser.add_argument("-codec")
     dump_parser.add_argument("-w", "--wordlists", nargs="+", metavar="WORDLIST WORDLIST2", help="Wordlists to use with hashcat", required=True)
     dump_parser.add_argument("-e", "--enabled-only", action="store_true", help="Only show enabled accounts")
+    dump_parser.add_argument('-nd', '--no-domain', action='store_true', help="Don't display domain in usernames")
+    dump_parser.add_argument('-csv', action='store_true', help="Save output in CSV format")
     # do not include -outputdir
     
     # subparser: reveal
@@ -55,6 +58,8 @@ def parse_args():
     reveal_parser.add_argument("-nxc", action="store_true", help="Scan $HOME/.nxc/logs/ntds for .ntds files")
     reveal_parser.add_argument("-w", "--wordlists", nargs="+", metavar="WORDLIST WORDLIST2", help="Wordlists to use with hashcat", required=False)
     reveal_parser.add_argument("-e", "--enabled-only", action="store_true", help="Only show enabled accounts")
+    reveal_parser.add_argument('-nd', '--no-domain', action='store_true', help="Don't display domain in usernames")
+    reveal_parser.add_argument('-csv', action='store_true', help="Save output in CSV format")
 
     return parser
 
@@ -101,10 +106,10 @@ def extract_unique_hashes(ntds_path, output_path, full_output_path, write_full_o
         raise
 
 def run_hashcat(hashes_file, wordlists):
-    start = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
-    print(f"{BOLD_GREEN}[+]{RESET} Starting hashcat session at {start}")
+    start = datetime.now().strftime("%H:%M:%S %d.%m.%Y")
+    print(f"\n{BOLD_GREEN}[+]{RESET} Starting hashcat session at {start}")
     subprocess.run(["hashcat", "-m1000", str(hashes_file), *wordlists, "--quiet"])
-    end = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+    end = datetime.now().strftime("%H:%M:%S %d.%m.%Y")
     print(f"{BOLD_GREEN}[+]{RESET} Ended hashcat session at {end}")
 
 def parse_potfile(potfile_path):
@@ -119,7 +124,7 @@ def parse_potfile(potfile_path):
                 cracked[hash_val] = password
     return cracked
 
-def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enabled_only=False):
+def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enabled_only=False, no_domain=False, to_csv=False):
     print(f"\n{BOLD_GREEN}[+]{RESET} Revealed credentials:")
     output_lines = []
 
@@ -151,25 +156,39 @@ def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enable
                 password_key = plain
                 password_colored = f"{BOLD_WHITE}{plain}{RESET}"
 
-            disabled_str = f" {BOLD_RED}<disabled>{RESET}" if status == "disabled" else ""
-            line_out = f"{user:<40} {password_colored}{disabled_str}"
-            output_lines.append((password_key, user, line_out, status))
+            # strip domain if requested
+            display_user = user.split("\\", 1)[-1] if no_domain else user
 
-    # sort: <no password> first, then by password
+            disabled_str = f"{BOLD_RED}<disabled>{RESET}" if status == "disabled" else ""
+            line_out = f"{display_user:<40} {password_colored}{' ' + disabled_str if status == 'disabled' else ''}"
+            output_lines.append((password_key, display_user, line_out, status))
+
+    # sort: <no password> first, then alphabetically
     output_lines.sort(key=lambda x: (x[0] != "<no password>", x[0].lower(), x[1].lower()))
 
     # print and write
-    output_file = session_dir / "revealhashed.txt"
-    with open(output_file, "w") as outf:
-        for password_key, user, line_out, status in output_lines:
-            print(line_out)
-            plain = password_key
-            outf.write(f"{user:<40} {plain}{' <disabled>' if status == 'disabled' else ''}\n")
+    for _, _, line_out, _ in output_lines:
+        print(line_out)
+
+    if to_csv:
+        output_file = session_dir / "revealhashed.csv"
+        with open(output_file, "w", newline="") as outf:
+            writer = csv.writer(outf)
+            writer.writerow(["Username", "Password", "Status"])
+            for password_key, user, _, status in output_lines:
+                stat = "disabled" if status == "disabled" else ""
+                writer.writerow([user, password_key, stat])
+    else:
+        output_file = session_dir / "revealhashed.txt"
+        with open(output_file, "w") as outf:
+            for password_key, user, _, status in output_lines:
+                status_str = " <disabled>" if status == "disabled" else ""
+                outf.write(f"{user:<40} {password_key}{status_str}\n")
 
     print(f"\n{BOLD_GREEN}[+]{RESET} Output saved to {output_file}")
 
 def main():
-    print(f"\n{BOLD_BLUE}revealhashed v0.1.2{RESET}\n")
+    print(f"\n{BOLD_BLUE}revealhashed v0.1.3{RESET}\n")
 
     parser = parse_args()
     args = parser.parse_args()
@@ -189,8 +208,7 @@ def main():
         ntdsutil_dir = session_dir / "ntdsutil"
         ntdsutil_dir.mkdir(parents=True, exist_ok=True)
         args.outputdir = str(ntdsutil_dir)
-        
-        start = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+        start = datetime.now().strftime("%H:%M:%S %d.%m.%Y")
         print(f"{BOLD_GREEN}[+]{RESET} Starting NTDS dump with ntdsutil at {start}")
 
         try:
@@ -198,7 +216,8 @@ def main():
         except Exception as e:
             print(f"{BOLD_RED}[!]{RESET} NTDS dump failed: {e}")
             return
-        end = datetime.now().strftime("%H:%M:%S %d-%m-%Y")
+            
+        end = datetime.now().strftime("%H:%M:%S %d.%m.%Y")
         print(f"{BOLD_GREEN}[+]{RESET} NTDS successfully dumped at {end}")
 
         # run secretsdump in the same session folder
@@ -246,7 +265,7 @@ def main():
         if HASHCAT_POT.exists():
             shutil.copy(HASHCAT_POT, session_dir)
         cracked = parse_potfile(HASHCAT_POT)
-        reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only)
+        reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only, no_domain=args.no_domain, to_csv=args.csv)
 
     elif args.command == "reveal":
         if args.nxc:
@@ -263,7 +282,7 @@ def main():
 
             while True:
                 try:
-                    selection = int(input("\nSelect file by index: "))
+                    selection = int(input(f"\n{BOLD_GREEN}[>]{RESET} Select file by index: "))
                     print()
                     if 0 <= selection < len(ntds_files):
                         ntds_path = ntds_files[selection]
@@ -297,12 +316,12 @@ def main():
         if HASHCAT_POT.exists():
             shutil.copy(HASHCAT_POT, session_dir)
         cracked = parse_potfile(HASHCAT_POT)
-        reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only)
+        reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only, no_domain=args.no_domain, to_csv=args.csv)
 
 if __name__ == "__main__":
     main()
 
-# revealhashed v0.1.2
+# revealhashed v0.1.3
 # 
 # contact options
 # mail: https://blog.zurrak.com/contact.html
