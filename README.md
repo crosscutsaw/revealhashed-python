@@ -76,7 +76,7 @@ _ntds file should contain usernames and hashes. it should be not ntds.dit. examp
 -csv (csv) switch is self explanatory; saves output to csv instead txt.  
 
 for example:  
-`revealhashed reveal -ntds <ntds_file>.ntds -w wordlist1.txt -e -nd -csv`
+`revealhashed reveal -ntds <ntds_file>.ntds -w wordlist1.txt -e -nd -csv`  
 `revealhashed reveal -nxc -w wordlist1.txt -e -nd -csv`
 
 ## example outputs
