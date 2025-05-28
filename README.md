@@ -1,5 +1,5 @@
 
-## about revealhashed-python v0.1.3
+## about revealhashed-python v0.1.4
 revealhashed is a streamlined utility to correlate ntds usernames, nt hashes, and cracked passwords in one view while cutting out time-consuming manual tasks.  
 
 ## how to install
@@ -10,14 +10,14 @@ from github:
 `pipx install git+https://github.com/crosscutsaw/revealhashed-python`  
 
 from deb package:  
-`wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed_0.1.3_all.deb; apt install ./revealhashed_0.1.3_all.deb'`  
+`wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed_0.1.4_all.deb; apt install ./revealhashed_0.1.4_all.deb'`  
 
 ## don't want to install?
 grab revealhashed binary from [here](https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed).  
 
 ## how to use
 ```
-revealhashed v0.1.3
+revealhashed v0.1.4
 
 usage: revealhashed [-h] [-r] {dump,reveal} ...
 
@@ -35,7 +35,7 @@ just execute `revealhashed -r` to remove contents of ~/.revealhashed
 
 ### revealhashed dump
 ```
-revealhashed v0.1.3
+revealhashed v0.1.4
 
 usage: revealhashed dump [-h] [-debug] [-hashes HASHES] [-no-pass] [-k] [-aesKey AESKEY] [-dc-ip DC_IP] [-codec CODEC] -w WORDLIST WORDLIST2 [WORDLIST WORDLIST2 ...] [-e] [-nd] [-csv] target
 ```
@@ -45,14 +45,14 @@ this command executes [zblurx's ntdsutil.py](https://github.com/zblurx/ntdsutil.
 -w (wordlist) switch is needed. one or more wordlists can be supplied.    
 -e (enabled-only) switch is not needed but suggested. it's self explanatory; only shows enabled users.  
 -nd (no-domain) switch hides domain names in usernames.  
--csv (csv) switch is self explanatory; saves output to csv instead txt.  
+-csv (csv) switch is self explanatory; saves output to csv, together with txt.  
 
 for example:  
 `revealhashed dump '<domain>/<username>:<password>'@<dc_ip> -w wordlist1.txt wordlist2.txt -e -nd -csv`
 
 ### revealhashed reveal
 ```
-revealhashed v0.1.3
+revealhashed v0.1.4
 
 usage: revealhashed reveal [-h] [-ntds NTDS] [-nxc] [-w WORDLIST WORDLIST2 [WORDLIST WORDLIST2 ...]] [-e] [-nd] [-csv]
 
@@ -75,7 +75,7 @@ _ntds file should contain usernames and hashes. it should be not ntds.dit. examp
 -w (wordlist) switch is needed. one or more wordlists can be supplied.  
 -e (enabled-only) switch is not needed but suggested. it's self explanatory; only shows enabled users.  
 -nd (no-domain) switch hides domain names in usernames.  
--csv (csv) switch is self explanatory; saves output to csv instead txt.  
+-csv (csv) switch is self explanatory; saves output to csv, together with txt.  
 
 for example:  
 `revealhashed reveal -ntds <ntds_file>.ntds -w wordlist1.txt -e -nd -csv`  

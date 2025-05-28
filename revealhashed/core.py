@@ -7,9 +7,12 @@ import subprocess
 import shutil
 import sys
 import csv
+import logging
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+
+# hide secretsdump hash output
 from contextlib import redirect_stdout
 
 # zblurx's ntdsutil.py
@@ -31,6 +34,9 @@ BOLD_ORANGE = "\033[1;33m"
 BOLD_RED = "\033[1;31m"
 BOLD_WHITE = "\033[1;37m"
 RESET = "\033[0m"
+
+# hide secretsdump info outputs
+logging.getLogger("impacket").disabled = True
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -174,25 +180,26 @@ def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enable
     for _, _, line_out, _ in output_lines:
         print(line_out)
 
+    output_file_txt = session_dir / "revealhashed.txt"
+    with open(output_file_txt, "w") as outf:
+        for password_key, user, _, status in output_lines:
+            status_str = " <disabled>" if status == "disabled" else ""
+            outf.write(f"{user:<40} {password_key}{status_str}\n")
+
+    print(f"\n{BOLD_GREEN}[+]{RESET} Output saved to {output_file_txt}")
+
     if to_csv:
-        output_file = session_dir / "revealhashed.csv"
-        with open(output_file, "w", newline="") as outf:
+        output_file_csv = session_dir / "revealhashed.csv"
+        with open(output_file_csv, "w", newline="") as outf:
             writer = csv.writer(outf)
             writer.writerow(["Username", "Password", "Status"])
             for password_key, user, _, status in output_lines:
                 stat = "disabled" if status == "disabled" else ""
                 writer.writerow([user, password_key, stat])
-    else:
-        output_file = session_dir / "revealhashed.txt"
-        with open(output_file, "w") as outf:
-            for password_key, user, _, status in output_lines:
-                status_str = " <disabled>" if status == "disabled" else ""
-                outf.write(f"{user:<40} {password_key}{status_str}\n")
-
-    print(f"\n{BOLD_GREEN}[+]{RESET} Output saved to {output_file}")
+        print(f"{BOLD_GREEN}[+]{RESET} Output saved to {output_file_csv}")
 
 def main():
-    print(f"\n{BOLD_BLUE}revealhashed v0.1.3{RESET}\n")
+    print(f"\n{BOLD_BLUE}revealhashed v0.1.4{RESET}\n")
 
     parser = parse_args()
     args = parser.parse_args()
@@ -239,7 +246,7 @@ def main():
             local_ops = LocalOperations(str(system_path))
             boot_key = local_ops.getBootKey()
 
-            with open(os.devnull, 'w') as fnull, redirect_stdout(fnull):
+            with open(os.devnull, 'w') as fnull, redirect_stdout(fnull): # hide secretsdump hash output
                 ntds = NTDSHashes(
                     str(ntds_path),
                     boot_key,
@@ -337,7 +344,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-# revealhashed v0.1.3
+# revealhashed v0.1.4
 # 
 # contact options
 # mail: https://blog.zurrak.com/contact.html
