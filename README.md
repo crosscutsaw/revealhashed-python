@@ -13,8 +13,7 @@ from deb package:
 `wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed_0.1.3_all.deb; apt install ./revealhashed_0.1.3_all.deb'`  
 
 ## don't want to install?
-
-grab revealhashed binary from [releases](https://github.com/crosscutsaw/revealhashed-python/releases/latest) section.
+grab revealhashed binary from [here](https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed).  
 
 ## how to use
 ```
