@@ -10,10 +10,14 @@ import csv
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+from contextlib import redirect_stdout
 
 # zblurx's ntdsutil.py
 from revealhashed.imports import ntdsutil
 from revealhashed.imports.ntdsutil import get_ntdsutil_parser, run_ntdsutil
+
+# ntds class
+from impacket.examples.secretsdump import NTDSHashes, LocalOperations
 
 # constants
 HOME = Path.home()
@@ -231,21 +235,33 @@ def main():
             return
 
         print(f"{BOLD_GREEN}[+]{RESET} Running secretsdump on NTDS files")
-
         try:
-            with open(output_path, "w") as f:
-                subprocess.run([
-                    "impacket-secretsdump",
-                    "-system", str(system_path),
-                    "-security", str(security_path),
-                    "-ntds", str(ntds_path),
-                    "local",
-                    "-just-dc-ntlm",
-                    "-user-status"
-                ], stdout=f, stderr=subprocess.DEVNULL)
+            local_ops = LocalOperations(str(system_path))
+            boot_key = local_ops.getBootKey()
+
+            with open(os.devnull, 'w') as fnull, redirect_stdout(fnull):
+                ntds = NTDSHashes(
+                    str(ntds_path),
+                    boot_key,
+                    isRemote=False,
+                    history=False,
+                    noLMHash=True,
+                    remoteOps=None,
+                    useVSSMethod=True,
+                    justNTLM=True,
+                    pwdLastSet=False,
+                    resumeSession=None,
+                    outputFileName=str(session_dir / "dump"),
+                    justUser=None,
+                    skipUser=None,
+                    ldapFilter=None,
+                    printUserStatus=True
+                )
+                ntds.dump()
+                ntds.finish()
+
         except Exception as e:
             print(f"{BOLD_RED}[!]{RESET} secretsdump failed: {e}")
-            return
 
         print(f"{BOLD_GREEN}[+]{RESET} secretsdump output saved to {output_path}")
 
