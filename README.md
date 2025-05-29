@@ -10,7 +10,7 @@ from github:
 `pipx install git+https://github.com/crosscutsaw/revealhashed-python`  
 
 from deb package:  
-`wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed_0.1.4_all.deb; apt install ./revealhashed_0.1.4_all.deb'`  
+`wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed_0.1.4_all.deb; apt install ./revealhashed_0.1.4_all.deb`  
 
 ## don't want to install?
 grab revealhashed binary from [here](https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed).  
@@ -69,7 +69,7 @@ options:
 
 this command wants to get supplied with ntds file by user or netexec then does classic revealhashed operations.  
 
-_ntds file should contain usernames and hashes. it should be not ntds.dit. example ntds dump can be obtained from repo._  
+**_ntds file should contain usernames and hashes. it should be not ntds.dit. example ntds dump can be obtained from repo._**  
 
 -ntds or -nxc switch is needed. -ntds switch is for a file you own with hashes. -nxc switch is for scanning ~/.nxc/logs/ntds directory then selecting .ntds file.  
 -w (wordlist) switch is needed. one or more wordlists can be supplied.  
