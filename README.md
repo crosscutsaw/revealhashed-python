@@ -2,15 +2,22 @@
 ## about revealhashed-python v0.1.4
 revealhashed is a streamlined utility to correlate ntds usernames, nt hashes, and cracked passwords in one view while cutting out time-consuming manual tasks.  
 
+## dependencies  
+hashcat  
+impacket or python3-impacket  
+
 ## how to install
 from pypi:  
-`pipx install revealhashed`
+`pipx install revealhashed`  
 
 from github:  
 `pipx install git+https://github.com/crosscutsaw/revealhashed-python`  
 
 from deb package:  
 `wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed_0.1.4_all.deb; apt install ./revealhashed_0.1.4_all.deb`  
+
+from whl package:  
+`wget https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed-0.1.4-py3-none-any.whl; pipx install revealhashed-0.1.4-py3-none-any.whl`  
 
 ## don't want to install?
 grab revealhashed binary from [here](https://github.com/crosscutsaw/revealhashed-python/releases/latest/download/revealhashed).  
@@ -43,7 +50,7 @@ usage: revealhashed dump [-h] [-debug] [-hashes HASHES] [-no-pass] [-k] [-aesKey
 this command executes [zblurx's ntdsutil.py](https://github.com/zblurx/ntdsutil.py) to dump ntds safely then does classic revealhashed operations.  
 
 -w (wordlist) switch is needed. one or more wordlists can be supplied.    
--e (enabled-only) switch is not needed but suggested. it's self explanatory; only shows enabled users.  
+-e (enabled-only) switch is suggested. it's self explanatory; only shows enabled users.  
 -nd (no-domain) switch hides domain names in usernames.  
 -csv (csv) switch is self explanatory; saves output to csv, together with txt.  
 
@@ -73,7 +80,7 @@ this command wants to get supplied with ntds file by user or netexec then does c
 
 -ntds or -nxc switch is needed. -ntds switch is for a file you own with hashes. -nxc switch is for scanning ~/.nxc/logs/ntds directory then selecting .ntds file.  
 -w (wordlist) switch is needed. one or more wordlists can be supplied.  
--e (enabled-only) switch is not needed but suggested. it's self explanatory; only shows enabled users.  
+-e (enabled-only) switch is suggested. it's self explanatory; only shows enabled users.  
 -nd (no-domain) switch hides domain names in usernames.  
 -csv (csv) switch is self explanatory; saves output to csv, together with txt.  
 
