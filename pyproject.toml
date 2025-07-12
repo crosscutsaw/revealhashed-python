@@ -1,12 +1,12 @@
 [project]
 name = "revealhashed"
-version = "0.1.4"
+version = "0.2.1"
 description = "Dump or analyze existing NTDS data, crack NT hashes with hashcat and match them to their corresponding user accounts."
 authors = [{ name = "aslan emre aslan", email = "emre@zurrak.com" }]
 license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.7"
-dependencies = ["impacket"]
+dependencies = ["impacket","neo4j"]
 
 [project.scripts]
 revealhashed = "revealhashed.__main__:main"
