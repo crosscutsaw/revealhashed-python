@@ -22,10 +22,6 @@ from revealhashed.imports.ntdsutil import get_ntdsutil_parser, run_ntdsutil
 # ntds class
 from impacket.examples.secretsdump import NTDSHashes, LocalOperations
 
-# neo4j
-from neo4j import Auth, GraphDatabase
-from neo4j.exceptions import ServiceUnavailable
-
 # constants
 HOME = Path.home()
 TMP_DIR = HOME / ".revealhashed"
@@ -64,10 +60,6 @@ def parse_args():
     dump_parser.add_argument("-e", "--enabled-only", action="store_true", help="Only show enabled accounts")
     dump_parser.add_argument('-nd', '--no-domain', action='store_true', help="Don't display domain in usernames")
     dump_parser.add_argument('-csv', action='store_true', help="Save output in CSV format")
-    dump_parser.add_argument('-bh', action='store_true', help="Mark cracked users as owned in BloodHound")
-    dump_parser.add_argument('--dburi', help='BloodHound Neo4j URI')
-    dump_parser.add_argument('--dbuser', help='BloodHound Neo4j username')
-    dump_parser.add_argument('--dbpassword', help='BloodHound Neo4j password')
     # do not include -outputdir
     
     # subparser: reveal
@@ -78,10 +70,7 @@ def parse_args():
     reveal_parser.add_argument("-e", "--enabled-only", action="store_true", help="Only show enabled accounts")
     reveal_parser.add_argument('-nd', '--no-domain', action='store_true', help="Don't display domain in usernames")
     reveal_parser.add_argument('-csv', action='store_true', help="Save output in CSV format")
-    reveal_parser.add_argument('-bh', action='store_true', help="Mark cracked users as owned in BloodHound")
-    reveal_parser.add_argument('--dburi', help='BloodHound Neo4j URI')
-    reveal_parser.add_argument('--dbuser', help='BloodHound Neo4j username')
-    reveal_parser.add_argument('--dbpassword', help='BloodHound Neo4j password')
+
     return parser
 
 def reset_tmp_dir():
@@ -97,76 +86,6 @@ def create_session_dir():
     session_path = TMP_DIR / f"rh_{now}"
     session_path.mkdir(parents=True, exist_ok=True)
     return session_path
-
-def mark_bloodhound_owned(txt_file_path, dburi, dbuser, dbpassword):
-    try:
-        driver = GraphDatabase.driver(dburi, auth=Auth(scheme="basic", principal=dbuser, credentials=dbpassword))
-        driver.verify_connectivity()
-        print(f"\n{BOLD_GREEN}[+]{RESET} Connected to BloodHound Neo4j database at {dburi} as {dbuser}\n")
-
-        # infer domain from first valid user line
-        inferred_domain = None
-        with open(txt_file_path) as f:
-            for line in f:
-                if "<no password>" in line:
-                    continue
-                parts = line.strip().split()
-                if not parts:
-                    continue
-                user_field = parts[0]
-                if "\\" in user_field:
-                    inferred_domain = user_field.split("\\", 1)[0].upper()
-                    break
-
-        with driver.session() as session:
-            with open(txt_file_path) as f:
-                for line in f:
-                    if "<no password>" in line:
-                        continue
-                    parts = line.strip().split()
-                    if not parts:
-                        continue
-
-                    user_field = parts[0]
-                    if "\\" in user_field:
-                        domain, user = user_field.split("\\", 1)
-                    else:
-                        user = user_field
-                        domain = inferred_domain or ""
-
-                    is_computer = user.endswith("$")
-                    if is_computer:
-                        user = user.rstrip("$")
-                        full_name = f"{user}.{domain}".upper()
-                        label = "Computer"
-                    else:
-                        full_name = f"{user}@{domain}".upper()
-                        label = "User"
-
-                    # try marking as owned
-                    query = f"MATCH (c:{label} {{name:'{full_name}'}}) RETURN c.owned AS owned"
-                    result = session.run(query).data()
-
-                    if not result:
-                        print(f"{BOLD_RED}[-]{RESET} Node {full_name} not found in BloodHound")
-                        continue
-
-                    if result[0]["owned"] is True:
-                        print(f"{BOLD_GREEN}[+]{RESET} {full_name} already marked as owned")
-                        continue
-
-                    update_query = f"MATCH (c:{label} {{name:'{full_name}'}}) SET c.owned=true RETURN c.name AS name"
-                    update_result = session.run(update_query).data()
-
-                    if update_result:
-                        print(f"{BOLD_GREEN}[+]{RESET} Marked {full_name} as owned in BloodHound")
-                    else:
-                        print(f"{BOLD_RED}[-]{RESET} Failed to mark {full_name} as owned in BloodHound")
-
-    except ServiceUnavailable:
-        print(f"{BOLD_RED}[-]{RESET} BloodHound DB unreachable at {dburi}")
-    except Exception as e:
-        print(f"{BOLD_RED}[-]{RESET} Error while marking BloodHound: {e}")
 
 def extract_unique_hashes(ntds_path, output_path, full_output_path, write_full_output=True):
     print(f"{BOLD_GREEN}[+]{RESET} Extracting unique NT hashes from: {ntds_path}")
@@ -280,7 +199,7 @@ def reveal_credentials(individual_ntds_path, cracked_hashes, session_dir, enable
         print(f"{BOLD_GREEN}[+]{RESET} Output saved to {output_file_csv}")
 
 def main():
-    print(f"\n{BOLD_BLUE}revealhashed v0.2.1{RESET}\n")
+    print(f"\n{BOLD_BLUE}revealhashed v0.1.4{RESET}\n")
 
     parser = parse_args()
     args = parser.parse_args()
@@ -370,8 +289,6 @@ def main():
             shutil.copy(HASHCAT_POT, session_dir)
         cracked = parse_potfile(HASHCAT_POT)
         reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only, no_domain=args.no_domain, to_csv=args.csv)
-        if getattr(args, "bh", False):
-            mark_bloodhound_owned(session_dir / "revealhashed.txt", args.dburi, args.dbuser, args.dbpassword)
 
     elif args.command == "reveal":
         if args.nxc:
@@ -423,13 +340,11 @@ def main():
             shutil.copy(HASHCAT_POT, session_dir)
         cracked = parse_potfile(HASHCAT_POT)
         reveal_credentials(ind_path, cracked, session_dir, enabled_only=args.enabled_only, no_domain=args.no_domain, to_csv=args.csv)
-        if getattr(args, "bh", False):
-            mark_bloodhound_owned(session_dir / "revealhashed.txt", args.dburi, args.dbuser, args.dbpassword)
 
 if __name__ == "__main__":
     main()
 
-# revealhashed v0.2.1
+# revealhashed v0.1.4
 # 
 # contact options
 # mail: https://blog.zurrak.com/contact.html
