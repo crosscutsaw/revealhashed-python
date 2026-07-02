@@ -1,5 +1,5 @@
 
-## about revealhashed-python v0.2.1
+## about revealhashed-python v0.3.0
 revealhashed is a streamlined utility to correlate ntds usernames, nt hashes, and cracked passwords in one view while cutting out time-consuming manual tasks.  
 
 ## dependencies  
