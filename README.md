@@ -1,5 +1,5 @@
 
-## about revealhashed-python v0.3.0
+## about revealhashed-python v0.3.1
 revealhashed is a streamlined utility to correlate ntds usernames, nt hashes, and cracked passwords in one view while cutting out time-consuming manual tasks.  
 
 ## dependencies  
@@ -18,7 +18,7 @@ from github:
 
 ## how to use
 ```
-revealhashed v0.3.0
+revealhashed v0.3.1
 
 usage: revealhashed [-h] [-r] {dump,reveal} ...
 
@@ -36,7 +36,7 @@ just execute `revealhashed -r` to remove contents of ~/.revealhashed
 
 ### revealhashed dump
 ```
-revealhashed v0.3.0
+revealhashed v0.3.1
 
 usage: revealhashed dump [-h] [-debug] [-hashes LMHASH:NTHASH] [-no-pass] [-k] [-aesKey HEXKEY] [-dc-ip IP] [-codec CODEC] [-e] [-nd] [-csv] [-bh] [--dburi DBURI] [--dbuser DBUSER] [--dbpassword DBPASSWORD]
                          [-m {ntdsutil,drsuapi,vss}] [-history] [-just-dc-user USER] -w WORDLIST [WORDLIST ...]
@@ -84,7 +84,7 @@ for example:
 
 ### revealhashed reveal
 ```
-revealhashed v0.3.0
+revealhashed v0.3.1
 
 usage: revealhashed reveal [-h] [-e] [-nd] [-csv] [-bh] [--dburi DBURI] [--dbuser DBUSER] [--dbpassword DBPASSWORD] [-ntds NTDS] [-nxc] [-w WORDLIST [WORDLIST ...]]
 

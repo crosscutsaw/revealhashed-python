@@ -17,7 +17,6 @@ NO_PASSWORD = "<no password>"
 NTDS_LINE_RE = re.compile(r"^[^:\n]+:\d+:[0-9a-fA-F]{32}:[0-9a-fA-F]{32}")
 _STATUS_RE = re.compile(r"\(status=(\w+)\)", re.IGNORECASE)
 
-
 @dataclass
 class CredentialRecord:
     account: str
@@ -26,7 +25,6 @@ class CredentialRecord:
     status: str
     is_computer: bool
     display_name: str
-
 
 def extract_unique_hashes(
     ntds_path: Path,
@@ -61,10 +59,8 @@ def extract_unique_hashes(
         if ind_handle:
             ind_handle.close()
 
-
 def run_hashcat(hashes_file: Path, wordlists: List[str]) -> None:
     start = datetime.now().strftime("%H:%M:%S %d.%m.%Y")
-    print()
     console.info(f"Starting hashcat session at {start}")
 
     cmd = ["hashcat", "-m", "1000", str(hashes_file), *map(str, wordlists), "--quiet"]
@@ -76,7 +72,6 @@ def run_hashcat(hashes_file: Path, wordlists: List[str]) -> None:
 
     end = datetime.now().strftime("%H:%M:%S %d.%m.%Y")
     console.info(f"Ended hashcat session at {end}")
-
 
 def parse_potfile(potfile_path: Path) -> Dict[str, str]:
     cracked: Dict[str, str] = {}
@@ -96,7 +91,6 @@ def _split_user_field(user_field: str) -> tuple[str, str]:
         return domain, account
     return "", user_field
 
-
 def reveal_credentials(
     individual_ntds_path: Path,
     cracked_hashes: Dict[str, str],
@@ -105,7 +99,6 @@ def reveal_credentials(
     no_domain: bool = False,
     to_csv: bool = False,
 ) -> List[CredentialRecord]:
-    print()
     console.info("Revealed credentials:")
     records: List[CredentialRecord] = []
     grouped: Dict[str, List[CredentialRecord]] = defaultdict(list)
@@ -148,7 +141,12 @@ def reveal_credentials(
             grouped[password].append(record)
 
     records.sort(
-        key=lambda r: (r.password != NO_PASSWORD, r.password.lower(), r.display_name.lower())
+        key=lambda r: (
+            r.password != NO_PASSWORD,
+            r.password.lower(),
+            r.status == "disabled",
+            r.display_name.lower(),
+        )
     )
 
     _print_records(records)
@@ -158,6 +156,30 @@ def reveal_credentials(
 
     return records
 
+def _group_by_password(
+    records: List[CredentialRecord],
+):
+    password_domains: dict[str, str] = {}
+
+    for record in records:
+        if record.domain:
+            password_domains.setdefault(record.password, record.domain)
+
+    groups: dict[tuple[str, str], List[CredentialRecord]] = {}
+    order: list[tuple[str, str]] = []
+
+    for record in records:
+        domain = record.domain or password_domains.get(record.password, "")
+        key = (domain, record.password)
+
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+
+        groups[key].append(record)
+
+    for key in order:
+        yield key[0], key[1], groups[key]
 
 def _format_line(record: CredentialRecord) -> str:
     if record.password == NO_PASSWORD:
@@ -167,28 +189,61 @@ def _format_line(record: CredentialRecord) -> str:
     suffix = f" {console.BOLD_RED}<disabled>{console.RESET}" if record.status == "disabled" else ""
     return f"{record.display_name:<40} {password}{suffix}"
 
-
 def _print_records(records: List[CredentialRecord]) -> None:
     for record in records:
         print(_format_line(record))
 
-
 def _write_txt(records: List[CredentialRecord], session_dir: Path) -> None:
     output = session_dir / "revealhashed.txt"
-    with open(output, "w") as handle:
-        for record in records:
-            suffix = " <disabled>" if record.status == "disabled" else ""
-            handle.write(f"{record.display_name:<40} {record.password}{suffix}\n")
-    print()
-    console.info(f"Output saved to {output}")
 
+    with open(output, "w") as handle:
+        groups = list(_group_by_password(records))
+
+        for group_index, (domain, password, group) in enumerate(groups):
+            for index, record in enumerate(group):
+                display_domain = domain if index == 0 else ""
+                display_password = password if index == 0 else ""
+
+                suffix = (
+                    " <disabled>"
+                    if record.status == "disabled"
+                    else ""
+                )
+
+                handle.write(
+                    f"{display_domain:<20} "
+                    f"{record.account:<30} "
+                    f"{display_password}{suffix}\n"
+                )
+
+            if group_index < len(groups) - 1:
+                handle.write("\n")
+
+    console.info(f"Output saved to {output}")
 
 def _write_csv(records: List[CredentialRecord], session_dir: Path) -> None:
     output = session_dir / "revealhashed.csv"
+
     with open(output, "w", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["Username", "Password", "Status"])
-        for record in records:
-            status = "disabled" if record.status == "disabled" else ""
-            writer.writerow([record.display_name, record.password, status])
+        writer.writerow(["Domain", "Username", "Password", "Status"])
+
+        for domain, password, group in _group_by_password(records):
+            usernames = "\n".join(
+                record.account
+                for record in group
+            )
+
+            statuses = "\n".join(
+                "disabled" if record.status == "disabled" else ""
+                for record in group
+            )
+
+            writer.writerow([
+                domain,
+                usernames,
+                password,
+                statuses,
+            ])
+
     console.info(f"Output saved to {output}")
